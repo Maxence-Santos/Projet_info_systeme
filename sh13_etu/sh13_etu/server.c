@@ -132,7 +132,7 @@ void createTable()
 	}
 } 
 
-void printDeck()
+void printDeck() 
 {
         int i,j;
 
@@ -187,14 +187,13 @@ void sendMessageToClient(char *clientip,int clientport,char *mess)
          (char *)&serv_addr.sin_addr.s_addr,
          server->h_length);
     serv_addr.sin_port = htons(clientport);
-    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
-        {
-                printf("ERROR connecting\n");
-                exit(1);
-        }
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
+		printf("ERROR connecting\n");
+		exit(1);
+    }
 
-        sprintf(buffer,"%s\n",mess);
-        n = write(sockfd,buffer,strlen(buffer));
+	sprintf(buffer,"%s\n",mess);
+	n = write(sockfd,buffer,strlen(buffer));
 
     close(sockfd);
 }
@@ -211,37 +210,37 @@ void broadcastMessage(char *mess)
 
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno;
-     socklen_t clilen;
-     char buffer[256];
-     struct sockaddr_in serv_addr, cli_addr;
-     int n;
+	int sockfd, newsockfd, portno;
+	socklen_t clilen;
+	char buffer[256];
+	struct sockaddr_in serv_addr, cli_addr;
+	int n;
 	int i;
 
-        char com;
-        char clientIpAddress[256], clientName[256];
-        int clientPort;
-        int id;
-        char reply[256];
+	char com;
+	char clientIpAddress[256], clientName[256];
+	int clientPort;
+	int id;
+	char reply[256];
 
 
-     if (argc < 2) {
-         fprintf(stderr,"ERROR, no port provided\n");
-         exit(1);
-     }
-     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-     if (sockfd < 0) 
-        error("ERROR opening socket");
-     bzero((char *) &serv_addr, sizeof(serv_addr));
-     portno = atoi(argv[1]);
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = INADDR_ANY;
-     serv_addr.sin_port = htons(portno);
-     if (bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr)) < 0) 
-              error("ERROR on binding");
-     listen(sockfd,5);
-     clilen = sizeof(cli_addr);
+	if (argc < 2) {
+		fprintf(stderr,"ERROR, no port provided\n");
+		exit(1);
+	}
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0) 
+	error("ERROR opening socket");
+	bzero((char *) &serv_addr, sizeof(serv_addr));
+	portno = atoi(argv[1]);
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
+	serv_addr.sin_port = htons(portno);
+	if (bind(sockfd, (struct sockaddr *) &serv_addr,
+			sizeof(serv_addr)) < 0) 
+			error("ERROR on binding");
+	listen(sockfd,5);
+	clilen = sizeof(cli_addr);
 
 	printDeck();
 	melangerDeck();
@@ -251,16 +250,14 @@ int main(int argc, char *argv[])
 
 	for (i=0;i<4;i++)
 	{
-        	strcpy(tcpClients[i].ipAddress,"localhost");
-        	tcpClients[i].port=-1;
-        	strcpy(tcpClients[i].name,"-");
+		strcpy(tcpClients[i].ipAddress,"localhost");
+		tcpClients[i].port=-1;
+		strcpy(tcpClients[i].name,"-");
 	}
 
      while (1)
      {    
-     	newsockfd = accept(sockfd, 
-                 (struct sockaddr *) &cli_addr, 
-                 &clilen);
+     	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,&clilen);
      	if (newsockfd < 0) 
           	error("ERROR on accept");
 
