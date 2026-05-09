@@ -258,8 +258,8 @@ int main(int argc, char **argv) {
              sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           } else if ((objetSel != -1) && (joueurSel == -1)) {
             sprintf(sendBuffer, "O %d %d", gId, objetSel);
-
             // RAJOUTER DU CODE ICI
+            goEnabled = 0; // Désactiver Go après envoi
             sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           } else if ((objetSel != -1) && (joueurSel != -1)) {
             if (joueurSel >= 0 && joueurSel < 4 && !joueursElimines[joueurSel] && joueurSel != gId) {
