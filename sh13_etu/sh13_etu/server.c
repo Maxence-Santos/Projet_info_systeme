@@ -19,12 +19,15 @@ int nbClients;
 int fsmServer;
 int deck[13]={0,1,2,3,4,5,6,7,8,9,10,11,12};
 int tableCartes[4][8];
+int joueurs_en_vie[4] = {1, 1, 1, 1};
 char *nomcartes[]=
 {"Sebastian Moran", "irene Adler", "inspector Lestrade",
   "inspector Gregson", "inspector Baynes", "inspector Bradstreet",
   "inspector Hopkins", "Sherlock Holmes", "John Watson", "Mycroft Holmes",
   "Mrs. Hudson", "Mary Morstan", "James Moriarty"};
+char *nomsymboles[]={"pipe","ampoule","poing","couronne","carnet","collier","oeil","crane"};
 int joueurCourant;
+int nbPlayers=4;
 
 void error(const char *msg)
 {
@@ -309,43 +312,159 @@ int main(int argc, char *argv[])
 				{
 					// On envoie ses cartes au joueur 0, ainsi que la ligne qui lui correspond dans tableCartes
 					// RAJOUTER DU CODE ICI
+					sprintf(reply,"D %d %d %d",deck[0],deck[1],deck[2]);
+					sendMessageToClient(tcpClients[0].ipAddress,
+							tcpClients[0].port,
+							reply);
+					for (int j=0;j<8;j++)
+					{
+						sprintf(reply,"V 0 %d %d", j, tableCartes[0][j]);
+						sendMessageToClient(tcpClients[0].ipAddress,
+								tcpClients[0].port,
+								reply);
+					}
 
 					// On envoie ses cartes au joueur 1, ainsi que la ligne qui lui correspond dans tableCartes
 					// RAJOUTER DU CODE ICI
-
+					sprintf(reply,"D %d %d %d",deck[3],deck[4],deck[5]);
+					sendMessageToClient(tcpClients[1].ipAddress,
+							tcpClients[1].port,
+							reply);
+					for (int j=0;j<8;j++)
+					{
+						sprintf(reply,"V 1 %d %d", j, tableCartes[1][j]);
+						sendMessageToClient(tcpClients[1].ipAddress,
+								tcpClients[1].port,
+								reply);
+					}
 					// On envoie ses cartes au joueur 2, ainsi que la ligne qui lui correspond dans tableCartes
 					// RAJOUTER DU CODE ICI
 
+					sprintf(reply,"D %d %d %d",deck[6],deck[7],deck[8]);
+					sendMessageToClient(tcpClients[2].ipAddress,
+							tcpClients[2].port,
+							reply);
+					for (int j=0;j<8;j++)
+					{
+						sprintf(reply,"V 2 %d %d", j, tableCartes[2][j]);
+						sendMessageToClient(tcpClients[2].ipAddress,
+								tcpClients[2].port,
+								reply);
+					}
+
 					// On envoie ses cartes au joueur 3, ainsi que la ligne qui lui correspond dans tableCartes
 					// RAJOUTER DU CODE ICI
+					sprintf(reply,"D %d %d %d",deck[9],deck[10],deck[11]);
+					sendMessageToClient(tcpClients[3].ipAddress,
+							tcpClients[3].port,
+							reply);
+
+					for (int j=0;j<8;j++)
+					{
+						sprintf(reply,"V 3 %d %d", j, tableCartes[3][j]);
+						sendMessageToClient(tcpClients[3].ipAddress,
+								tcpClients[3].port,
+								reply);
+					}
 
 					// On envoie enfin un message a tout le monde pour definir qui est le joueur courant=0
 					// RAJOUTER DU CODE ICI
-
-                                        fsmServer=1;
+					sprintf(reply,"M %d",joueurCourant);
+					broadcastMessage(reply);
+					fsmServer=1;
 				}
 				break;
                 }
 	}
 	else if (fsmServer==1)
 	{
+		int guiltSel,objSel,joueurSel;
 		switch (buffer[0])
 		{
-                	case 'G':
-				// RAJOUTER DU CODE ICI
-				break;
-                	case 'O':
-				// RAJOUTER DU CODE ICI
-				break;
+			case 'G':
+			// RAJOUTER DU CODE ICI
+			sscanf(buffer+2, "%d %d",&id,&guiltSel);
+				if(guiltSel == deck[12])
+				{
+					sprintf(reply,"E %s a trouvé le coupable et remporte donc la partie !\nLe coupable était %s\n",tcpClients[id].name,nomcartes[guiltSel]);
+					broadcastMessage(reply);
+					exit(0);
+				}
+				else
+				{
+					nbPlayers--;
+					if(nbPlayers == 0)
+					{
+						sprintf(reply,"E %s a fait une accusation et s'est trompé, il a donc perdu\nIl ne reste plus aucun joueur, la partie est terminée",tcpClients[id].name);
+						broadcastMessage(reply);
+						exit(0);
+					}
+					else
+					{
+						sprintf(reply,"%s a fait une accusation et s'est trompé, il a donc perdu et la partie continue",tcpClients[id].name);
+						broadcastMessage(reply);
+						joueurs_en_vie[joueurCourant] = 0;
+						do {
+							if(joueurCourant == 3)
+								joueurCourant = 0;
+							else
+								joueurCourant++;
+						} while(!joueurs_en_vie[joueurCourant]);
+						sprintf(reply,"M %d",joueurCourant);
+						broadcastMessage(reply);
+					}
+				}
+			break;
+			case 'O':
+			// RAJOUTER DU CODE ICI
+			sscanf(buffer+2, "%d %d",&id,&objSel);
+			sprintf(reply,"%s a demandé qui avait l'objet \"%s\"\n",tcpClients[id].name,nomsymboles[objSel]);
+			broadcastMessage(reply);
+			int val;
+			for(int i=0;i<4;i++)
+			{
+				// On ne renseigne rien sur l'objet du joueur ayant fait la demande
+				if(i == id)
+					continue;
+				// Le joueur possède cet objet
+				if(tableCartes[i][objSel] > 0)
+					val = 42;
+				else
+					val = 0;
+				sprintf(reply, "V %d %d %d",val, i, objSel);
+				broadcastMessage(reply);
+			}
+			do {
+				if(joueurCourant == 3)
+					joueurCourant = 0;
+				else
+					joueurCourant++;
+			} while(!joueurs_en_vie[joueurCourant]);
+			sprintf(reply,"M %d",joueurCourant);
+			broadcastMessage(reply);
+			break;
 			case 'S':
 				// RAJOUTER DU CODE ICI
+				sscanf(buffer+2, "%d %d %d",&id,&joueurSel,&objSel);
+				sprintf(reply,"%s a demandé à %s combien il avait d'objets \"%s\"\n",tcpClients[id].name,tcpClients[joueurSel].name,nomsymboles[objSel]);
+				broadcastMessage(reply);
+				sprintf(reply, "V %d %d %d",tableCartes[joueurSel][objSel], joueurSel, objSel);
+				broadcastMessage(reply);
+				do {
+					if(joueurCourant == 3)
+						joueurCourant = 0;
+					else
+						joueurCourant++;
+				} while(!joueurs_en_vie[joueurCourant]);
+				sprintf(reply,"M %d",joueurCourant);
+				broadcastMessage(reply);
 				break;
-                	default:
-                        	break;
+			default:
+					break;
 		}
-        }
-     	close(newsockfd);
-     }
-     close(sockfd);
-     return 0; 
+	}
+	close(newsockfd);
+	}
+	close(sockfd);
+	return 0; 
 }
