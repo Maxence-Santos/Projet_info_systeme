@@ -28,6 +28,7 @@ int tableCartes[4][8];
 int b[3];
 int goEnabled;
 int connectEnabled;
+int joueursElimines[4] = {0, 0, 0, 0}; // 0 = actif, 1 = éliminé
 
 char *nbobjets[] = {"5", "5", "5", "5", "4", "3", "3", "3"};
 char *nbnoms[] = {
@@ -231,7 +232,7 @@ int main(int argc, char **argv) {
                   gName);
 
           // RAJOUTER DU CODE ICI
-
+            sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           connectEnabled = 0;
         } else if ((mx >= 0) && (mx < 200) && (my >= 90) && (my < 330)) {
           joueurSel = (my - 90) / 60;
@@ -254,14 +255,26 @@ int main(int argc, char **argv) {
             sprintf(sendBuffer, "G %d %d", gId, guiltSel);
 
             // RAJOUTER DU CODE ICI
-
+             sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           } else if ((objetSel != -1) && (joueurSel == -1)) {
             sprintf(sendBuffer, "O %d %d", gId, objetSel);
 
             // RAJOUTER DU CODE ICI
-
+            sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           } else if ((objetSel != -1) && (joueurSel != -1)) {
-            sprintf(sendBuffer, "S %d %d %d", gId, joueurSel, objetSel);
+            if (joueurSel >= 0 && joueurSel < 4 && !joueursElimines[joueurSel] && joueurSel != gId) {
+              sprintf(sendBuffer,"S %d %d %d",gId, joueurSel,objetSel);
+              // RAJOUTER DU CODE ICI
+              sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
+              goEnabled = 0; // Désactiver Go après envoi
+            } else if (joueurSel == gId) {
+                printf("Cannot query yourself.\n");
+            } else if (joueurSel >= 0 && joueurSel < 4 && joueursElimines[joueurSel]){
+                printf("Cannot query an eliminated player.\n");
+                // Peut-être afficher un message à l'utilisateur ?
+            } else {
+                printf("Invalid target player selected.\n");
+            }
 
             // RAJOUTER DU CODE ICI
           }
