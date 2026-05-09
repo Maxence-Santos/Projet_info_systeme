@@ -124,6 +124,7 @@ int main(int argc, char **argv) {
   char sendBuffer[256];
   char lname[256];
   int id;
+  int a, c, d;
 
   if (argc < 6) {
     printf("<app> <Main server ip address> <Main server port> <Client ip "
@@ -282,29 +283,33 @@ int main(int argc, char **argv) {
       // Message 'I' : le joueur recoit son Id
       case 'I':
         // RAJOUTER DU CODE ICI
-
+        sscanf(gbuffer,"%*c %d",&gId);
         break;
       // Message 'L' : le joueur recoit la liste des joueurs
       case 'L':
         // RAJOUTER DU CODE ICI
-
+        sscanf(gbuffer,"%*c %s %s %s %s",gNames[0],gNames[1],gNames[2],gNames[3]);
         break;
       // Message 'D' : le joueur recoit ses trois cartes
       case 'D':
         // RAJOUTER DU CODE ICI
-
+        sscanf(gbuffer,"%*c %d %d %d",&b[0],&b[1],&b[2]);
         break;
       // Message 'M' : le joueur recoit le n° du joueur courant
       // Cela permet d'affecter goEnabled pour autoriser l'affichage du bouton
       // go
       case 'M':
         // RAJOUTER DU CODE ICI
-
+        sscanf(gbuffer,"%*c %d",&id);
+        printf("gID %d  ID %d GO %d\n", gId,id,goEnabled);
+        if(id==gId)
+          goEnabled =1;
         break;
       // Message 'V' : le joueur recoit une valeur de tableCartes
       case 'V':
         // RAJOUTER DU CODE ICI
-
+        sscanf(gbuffer,"%*c %d %d %d",&a,&c,&d);
+				tableCartes[a][c] = d;
         break;
       }
       synchro = 0;
