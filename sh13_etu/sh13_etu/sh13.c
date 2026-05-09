@@ -77,12 +77,9 @@ void *fn_serveur_tcp(void *arg) {
       printf("read error\n");
       exit(1);
     }
-    // printf("%s",gbuffer);
 
     synchro = 1;
-
-    while (synchro)
-      ;
+    while (synchro);
   }
 }
 
@@ -210,29 +207,21 @@ int main(int argc, char **argv) {
   texture_connectbutton = SDL_CreateTextureFromSurface(renderer, connectbutton);
 
   TTF_Font *Sans = TTF_OpenFont("sans.ttf", 15);
-  printf("Sans=%p\n", Sans);
 
-  /* Creation du thread serveur tcp. */
-  printf("Creation du thread serveur tcp !\n");
   synchro = 0;
   ret = pthread_create(&thread_serveur_tcp_id, NULL, fn_serveur_tcp, NULL);
 
   while (!quit) {
     if (SDL_PollEvent(&event)) {
-      // printf("un event\n");
       switch (event.type) {
       case SDL_QUIT:
         quit = 1;
         break;
       case SDL_MOUSEBUTTONDOWN:
         SDL_GetMouseState(&mx, &my);
-        // printf("mx=%d my=%d\n",mx,my);
         if ((mx < 200) && (my < 50) && (connectEnabled == 1)) {
-          sprintf(sendBuffer, "C %s %d %s", gClientIpAddress, gClientPort,
-                  gName);
-
-          // RAJOUTER DU CODE ICI
-            sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
+          sprintf(sendBuffer, "C %s %d %s", gClientIpAddress, gClientPort, gName);
+          sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           connectEnabled = 0;
         } else if ((mx >= 0) && (mx < 200) && (my >= 90) && (my < 330)) {
           joueurSel = (my - 90) / 60;
@@ -247,36 +236,20 @@ int main(int argc, char **argv) {
         } else if ((mx >= 250) && (mx < 300) && (my >= 350) && (my < 740)) {
           int ind = (my - 350) / 30;
           guiltGuess[ind] = 1 - guiltGuess[ind];
-        } else if ((mx >= 500) && (mx < 700) && (my >= 350) && (my < 450) &&
-                   (goEnabled == 1)) {
-          printf("go! joueur=%d objet=%d guilt=%d\n", joueurSel, objetSel,
-                 guiltSel);
+        } else if ((mx >= 500) && (mx < 700) && (my >= 350) && (my < 450) && (goEnabled == 1)) {
           if (guiltSel != -1) {
             sprintf(sendBuffer, "G %d %d", gId, guiltSel);
-
-            // RAJOUTER DU CODE ICI
-             sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
+            sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           } else if ((objetSel != -1) && (joueurSel == -1)) {
             sprintf(sendBuffer, "O %d %d", gId, objetSel);
-            // RAJOUTER DU CODE ICI
-            goEnabled = 0; // Désactiver Go après envoi
+            goEnabled = 0;
             sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
           } else if ((objetSel != -1) && (joueurSel != -1)) {
             if (joueurSel >= 0 && joueurSel < 4 && !joueursElimines[joueurSel] && joueurSel != gId) {
               sprintf(sendBuffer,"S %d %d %d",gId, joueurSel,objetSel);
-              // RAJOUTER DU CODE ICI
               sendMessageToServer(gServerIpAddress,gServerPort,sendBuffer);
-              goEnabled = 0; // Désactiver Go après envoi
-            } else if (joueurSel == gId) {
-                printf("Cannot query yourself.\n");
-            } else if (joueurSel >= 0 && joueurSel < 4 && joueursElimines[joueurSel]){
-                printf("Cannot query an eliminated player.\n");
-                // Peut-être afficher un message à l'utilisateur ?
-            } else {
-                printf("Invalid target player selected.\n");
+              goEnabled = 0;
             }
-
-            // RAJOUTER DU CODE ICI
           }
         } else {
           joueurSel = -1;
@@ -291,46 +264,31 @@ int main(int argc, char **argv) {
     }
 
     if (synchro == 1) {
-      printf("consomme |%s|\n", gbuffer);
       switch (gbuffer[0]) {
-      // Message 'I' : le joueur recoit son Id
       case 'I':
-        // RAJOUTER DU CODE ICI
         sscanf(gbuffer,"%*c %d",&gId);
         break;
-      // Message 'L' : le joueur recoit la liste des joueurs
       case 'L':
-        // RAJOUTER DU CODE ICI
         sscanf(gbuffer,"%*c %s %s %s %s",gNames[0],gNames[1],gNames[2],gNames[3]);
         break;
-      // Message 'D' : le joueur recoit ses trois cartes
       case 'D':
-        // RAJOUTER DU CODE ICI
         sscanf(gbuffer,"%*c %d %d %d",&b[0],&b[1],&b[2]);
         break;
-      // Message 'M' : le joueur recoit le n° du joueur courant
-      // Cela permet d'affecter goEnabled pour autoriser l'affichage du bouton
-      // go
       case 'M':
-        // RAJOUTER DU CODE ICI
         sscanf(gbuffer,"%*c %d",&id);
-        printf("gID %d  ID %d GO %d\n", gId,id,goEnabled);
-        if(id==gId)
-          goEnabled =1;
+        if(id==gId) goEnabled =1;
         break;
-      // Message 'V' : le joueur recoit une valeur de tableCartes
       case 'V':
-        // RAJOUTER DU CODE ICI
         sscanf(gbuffer,"%*c %d %d %d",&a,&c,&d);
-				tableCartes[a][c] = d;
+		tableCartes[a][c] = d;
+        break;
+      case 'W': // Fix: Ajout du signal "Joueur éliminé"
+        sscanf(gbuffer,"%*c %d",&id);
+        joueursElimines[id] = 1;
         break;
       }
       synchro = 0;
     }
-
-    SDL_Rect dstrect_grille = {512 - 250, 10, 500, 350};
-    SDL_Rect dstrect_image = {0, 0, 500, 330};
-    SDL_Rect dstrect_image1 = {0, 340, 250, 330 / 2};
 
     SDL_SetRenderDrawColor(renderer, 255, 230, 230, 230);
     SDL_Rect rect = {0, 0, 1024, 768};
@@ -375,16 +333,13 @@ int main(int argc, char **argv) {
 
     SDL_Color col1 = {0, 0, 0};
     for (i = 0; i < 8; i++) {
-      SDL_Surface *surfaceMessage =
-          TTF_RenderText_Solid(Sans, nbobjets[i], col1);
-      SDL_Texture *Message =
-          SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-
-      SDL_Rect Message_rect;              // create a rect
-      Message_rect.x = 230 + i * 60;      // controls the rect's x coordinate
-      Message_rect.y = 50;                // controls the rect's y coordinte
-      Message_rect.w = surfaceMessage->w; // controls the width of the rect
-      Message_rect.h = surfaceMessage->h; // controls the height of the rect
+      SDL_Surface *surfaceMessage = TTF_RenderText_Solid(Sans, nbobjets[i], col1);
+      SDL_Texture *Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+      SDL_Rect Message_rect;             
+      Message_rect.x = 230 + i * 60;     
+      Message_rect.y = 50;               
+      Message_rect.w = surfaceMessage->w; 
+      Message_rect.h = surfaceMessage->h; 
 
       SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
       SDL_DestroyTexture(Message);
@@ -393,9 +348,7 @@ int main(int argc, char **argv) {
 
     for (i = 0; i < 13; i++) {
       SDL_Surface *surfaceMessage = TTF_RenderText_Solid(Sans, nbnoms[i], col1);
-      SDL_Texture *Message =
-          SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-
+      SDL_Texture *Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
       SDL_Rect Message_rect;
       Message_rect.x = 105;
       Message_rect.y = 350 + i * 30;
@@ -416,8 +369,7 @@ int main(int argc, char **argv) {
           else
             sprintf(mess, "%d", tableCartes[i][j]);
           SDL_Surface *surfaceMessage = TTF_RenderText_Solid(Sans, mess, col1);
-          SDL_Texture *Message =
-              SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+          SDL_Texture *Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
           SDL_Rect Message_rect;
           Message_rect.x = 230 + j * 60;
@@ -431,155 +383,42 @@ int main(int argc, char **argv) {
         }
       }
 
-    // Sebastian Moran
-    {
-      SDL_Rect dstrect_crane = {0, 350, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect_crane);
-    }
-    {
-      SDL_Rect dstrect_poing = {30, 350, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect_poing);
-    }
-    // Irene Adler
-    {
-      SDL_Rect dstrect_crane = {0, 380, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect_crane);
-    }
-    {
-      SDL_Rect dstrect_ampoule = {30, 380, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect_ampoule);
-    }
-    {
-      SDL_Rect dstrect_collier = {60, 380, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[5], NULL, &dstrect_collier);
-    }
-    // Inspector Lestrade
-    {
-      SDL_Rect dstrect_couronne = {0, 410, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
-    }
-    {
-      SDL_Rect dstrect_oeil = {30, 410, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[6], NULL, &dstrect_oeil);
-    }
-    {
-      SDL_Rect dstrect_carnet = {60, 410, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect_carnet);
-    }
-    // Inspector Gregson
-    {
-      SDL_Rect dstrect_couronne = {0, 440, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
-    }
-    {
-      SDL_Rect dstrect_poing = {30, 440, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect_poing);
-    }
-    {
-      SDL_Rect dstrect_carnet = {60, 440, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect_carnet);
-    }
-    // Inspector Baynes
-    {
-      SDL_Rect dstrect_couronne = {0, 470, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
-    }
-    {
-      SDL_Rect dstrect_ampoule = {30, 470, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect_ampoule);
-    }
-    // Inspector Bradstreet
-    {
-      SDL_Rect dstrect_couronne = {0, 500, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
-    }
-    {
-      SDL_Rect dstrect_poing = {30, 500, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect_poing);
-    }
-    // Inspector Hopkins
-    {
-      SDL_Rect dstrect_couronne = {0, 530, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
-    }
-    {
-      SDL_Rect dstrect_pipe = {30, 530, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect_pipe);
-    }
-    {
-      SDL_Rect dstrect_oeil = {60, 530, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[6], NULL, &dstrect_oeil);
-    }
-    // Sherlock Holmes
-    {
-      SDL_Rect dstrect_pipe = {0, 560, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect_pipe);
-    }
-    {
-      SDL_Rect dstrect_ampoule = {30, 560, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect_ampoule);
-    }
-    {
-      SDL_Rect dstrect_poing = {60, 560, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect_poing);
-    }
-    // John Watson
-    {
-      SDL_Rect dstrect_pipe = {0, 590, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect_pipe);
-    }
-    {
-      SDL_Rect dstrect_oeil = {30, 590, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[6], NULL, &dstrect_oeil);
-    }
-    {
-      SDL_Rect dstrect_poing = {60, 590, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect_poing);
-    }
-    // Mycroft Holmes
-    {
-      SDL_Rect dstrect_pipe = {0, 620, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect_pipe);
-    }
-    {
-      SDL_Rect dstrect_ampoule = {30, 620, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect_ampoule);
-    }
-    {
-      SDL_Rect dstrect_carnet = {60, 620, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect_carnet);
-    }
-    // Mrs. Hudson
-    {
-      SDL_Rect dstrect_pipe = {0, 650, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect_pipe);
-    }
-    {
-      SDL_Rect dstrect_collier = {30, 650, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[5], NULL, &dstrect_collier);
-    }
-    // Mary Morstan
-    {
-      SDL_Rect dstrect_carnet = {0, 680, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect_carnet);
-    }
-    {
-      SDL_Rect dstrect_collier = {30, 680, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[5], NULL, &dstrect_collier);
-    }
-    // James Moriarty
-    {
-      SDL_Rect dstrect_crane = {0, 710, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect_crane);
-    }
-    {
-      SDL_Rect dstrect_ampoule = {30, 710, 30, 30};
-      SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect_ampoule);
-    }
+    { SDL_Rect dstrect = {0, 350, 30, 30}; SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 350, 30, 30}; SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 380, 30, 30}; SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 380, 30, 30}; SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect); }
+    { SDL_Rect dstrect = {60, 380, 30, 30}; SDL_RenderCopy(renderer, texture_objet[5], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 410, 30, 30}; SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 410, 30, 30}; SDL_RenderCopy(renderer, texture_objet[6], NULL, &dstrect); }
+    { SDL_Rect dstrect = {60, 410, 30, 30}; SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 440, 30, 30}; SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 440, 30, 30}; SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect); }
+    { SDL_Rect dstrect = {60, 440, 30, 30}; SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 470, 30, 30}; SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 470, 30, 30}; SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 500, 30, 30}; SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 500, 30, 30}; SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 530, 30, 30}; SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 530, 30, 30}; SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect); }
+    { SDL_Rect dstrect = {60, 530, 30, 30}; SDL_RenderCopy(renderer, texture_objet[6], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 560, 30, 30}; SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 560, 30, 30}; SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect); }
+    { SDL_Rect dstrect = {60, 560, 30, 30}; SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 590, 30, 30}; SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 590, 30, 30}; SDL_RenderCopy(renderer, texture_objet[6], NULL, &dstrect); }
+    { SDL_Rect dstrect = {60, 590, 30, 30}; SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 620, 30, 30}; SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 620, 30, 30}; SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect); }
+    { SDL_Rect dstrect = {60, 620, 30, 30}; SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 650, 30, 30}; SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 650, 30, 30}; SDL_RenderCopy(renderer, texture_objet[5], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 680, 30, 30}; SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 680, 30, 30}; SDL_RenderCopy(renderer, texture_objet[5], NULL, &dstrect); }
+    { SDL_Rect dstrect = {0, 710, 30, 30}; SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect); }
+    { SDL_Rect dstrect = {30, 710, 30, 30}; SDL_RenderCopy(renderer, texture_objet[1], NULL, &dstrect); }
 
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-    // Afficher les suppositions
     for (i = 0; i < 13; i++)
       if (guiltGuess[i]) {
         SDL_RenderDrawLine(renderer, 250, 350 + i * 30, 300, 380 + i * 30);
@@ -609,7 +448,6 @@ int main(int argc, char **argv) {
     SDL_RenderDrawLine(renderer, 250, 350, 250, 740);
     SDL_RenderDrawLine(renderer, 300, 350, 300, 740);
 
-    // SDL_RenderCopy(renderer, texture_grille, NULL, &dstrect_grille);
     if (b[0] != -1) {
       SDL_Rect dstrect = {750, 0, 1000 / 4, 660 / 4};
       SDL_RenderCopy(renderer, texture_deck[b[0]], NULL, &dstrect);
@@ -623,38 +461,38 @@ int main(int argc, char **argv) {
       SDL_RenderCopy(renderer, texture_deck[b[2]], NULL, &dstrect);
     }
 
-    // Le bouton go
     if (goEnabled == 1) {
       SDL_Rect dstrect = {500, 350, 200, 150};
       SDL_RenderCopy(renderer, texture_gobutton, NULL, &dstrect);
     }
-    // Le bouton connect
     if (connectEnabled == 1) {
       SDL_Rect dstrect = {0, 0, 200, 50};
       SDL_RenderCopy(renderer, texture_connectbutton, NULL, &dstrect);
     }
 
-    // SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-    // SDL_RenderDrawLine(renderer, 0, 0, 200, 200);
-
-    SDL_Color col = {0, 0, 0};
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++) {
       if (strlen(gNames[i]) > 0) {
-        SDL_Surface *surfaceMessage =
-            TTF_RenderText_Solid(Sans, gNames[i], col);
-        SDL_Texture *Message =
-            SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+        SDL_Color col = {0, 0, 0};
+        
+        // Fix: Affiche le nom en ROUGE si le joueur s'est trompé et a été éliminé
+        if (joueursElimines[i]) {
+            col.r = 255; col.g = 0; col.b = 0;
+        }
 
-        SDL_Rect Message_rect;              // create a rect
-        Message_rect.x = 10;                // controls the rect's x coordinate
-        Message_rect.y = 110 + i * 60;      // controls the rect's y coordinte
-        Message_rect.w = surfaceMessage->w; // controls the width of the rect
-        Message_rect.h = surfaceMessage->h; // controls the height of the rect
+        SDL_Surface *surfaceMessage = TTF_RenderText_Solid(Sans, gNames[i], col);
+        SDL_Texture *Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+
+        SDL_Rect Message_rect;              
+        Message_rect.x = 10;                
+        Message_rect.y = 110 + i * 60;      
+        Message_rect.w = surfaceMessage->w; 
+        Message_rect.h = surfaceMessage->h; 
 
         SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
         SDL_DestroyTexture(Message);
         SDL_FreeSurface(surfaceMessage);
       }
+    }
 
     SDL_RenderPresent(renderer);
   }
